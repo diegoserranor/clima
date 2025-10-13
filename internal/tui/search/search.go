@@ -248,16 +248,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	view := "\n"
 	switch m.view {
 	case viewInput:
-		return view + "Location search:\n" + m.input.View() + "\n\n" + m.help.View(m.inputKeys)
+		return "Location search:\n" + m.input.View() + "\n\n" + m.help.View(m.inputKeys)
 	case viewLoading:
-		return view + fmt.Sprintf("Finding location%s\n", m.ellipsis.View())
+		return fmt.Sprintf("Finding location%s\n", m.ellipsis.View())
 	case viewPick:
-		return view + "Pick a location:\n\n" + m.list.View() + "\n" + m.help.View(m.listKeys)
+		return "Pick a location:\n\n" + m.list.View() + "\n" + m.help.View(m.listKeys)
 	case viewError:
-		return view + "Error ... try again or quit\n"
+		return "Error ... try again or quit\n"
 	default:
 		return ""
 	}

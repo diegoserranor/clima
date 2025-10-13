@@ -26,7 +26,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Failed to ensure debug directory exists: %v\n", err)
 			os.Exit(1)
 		}
-		if sink, err = os.OpenFile(DEBUG_PATH, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644); err != nil {
+		if sink, err = os.OpenFile(DEBUG_PATH, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to open debug log file: %v\n", err)
 			os.Exit(1)
 		}
@@ -38,4 +38,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-

@@ -42,8 +42,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		fmt.Fprintf(m.sink, "%s [msg] %T: %+v\n", nowStr, msg, msg)
 	}
 
-	// messages from sub-components
 	switch msg := msg.(type) {
+
+	// terminal size changes
+	case tea.WindowSizeMsg:
+		m.weather, _ = m.weather.Update(msg)
+		return m, nil
 
 	// recent
 	case recent.RecentCompleteMsg:
@@ -52,7 +56,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.search.Init()
 		}
 		m.route = routeWeather
-		m.weather = weather.New(msg.Location)
+		m.weather = m.weather.Reset(msg.Location)
 		return m, m.weather.Init()
 	case recent.NewSearchMsg:
 		m.route = routeSearch
@@ -61,7 +65,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// search
 	case search.SearchCompleteMsg:
 		m.route = routeWeather
-		m.weather = weather.New(msg.Location)
+		m.weather = m.weather.Reset(msg.Location)
 		return m, m.weather.Init()
 	case search.RecentMsg:
 		m.route = routeRecent
@@ -96,16 +100,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	var content string
 	switch m.route {
 	case routeRecent:
-		return m.recent.View()
+		content = m.recent.View()
 	case routeSearch:
-		return m.search.View()
+		content = m.search.View()
 	case routeWeather:
-		return m.weather.View()
+		content = m.weather.View()
 	default:
-		return "Unknown state (core)"
+		content = "Unknown state (core)"
 	}
+	return content
 }
 
 func InitialModel(sink io.Writer) Model {
@@ -113,6 +119,6 @@ func InitialModel(sink io.Writer) Model {
 		sink:    sink,
 		recent:  recent.New(),
 		search:  search.New(),
-		weather: weather.New(openmeteo.GeocodingResult{}),
+		weather: weather.New(openmeteo.GeocodingResult{}, sink),
 	}
 }

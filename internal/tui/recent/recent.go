@@ -193,9 +193,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 func (m Model) View() string {
 	switch m.view {
 	case viewList:
-		return "\nRecent locations:\n\n" + m.list.View() + "\n" + m.help.View(m.keys)
+		return "Recent locations:\n\n" + m.list.View() + "\n" + m.help.View(m.keys)
 	case viewError:
-		return "\nError occurred"
+		return "Error occurred"
 	default:
 		return "Unknown state (recent)"
 	}
