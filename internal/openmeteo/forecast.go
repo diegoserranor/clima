@@ -11,11 +11,14 @@ import (
 // These are not exclusive. Check the docs for additional ones.
 // https://open-meteo.com/en/docs
 type ForecastParams struct {
-	Latitude  float64
-	Longitude float64
-	Current   []CurrentVariables
-	Daily     []DailyVariables
-	Hourly    []HourlyVariables
+	Latitude      float64
+	Longitude     float64
+	Timezone      string
+	ForecastHours int
+	ForecastDays  int
+	Current       []CurrentVariables
+	Daily         []DailyVariables
+	Hourly        []HourlyVariables
 }
 
 // FloatMeasurement pairs a numeric value with the unit reported by the API.
@@ -172,6 +175,15 @@ type forecastResponseRaw struct {
 // typed measurement structs so callers never have to downcast from any.
 func GetForecast(params ForecastParams) (ForecastResponse, error) {
 	url := fmt.Sprintf("%s?latitude=%f&longitude=%f", FORECAST_API_URL, params.Latitude, params.Longitude)
+	if params.Timezone != "" {
+		url += fmt.Sprintf("&timezone=%s", params.Timezone)
+	}
+	if params.ForecastHours > 0 {
+		url += fmt.Sprintf("&forecast_hours=%d", params.ForecastHours)
+	}
+	if params.ForecastDays > 0 {
+		url += fmt.Sprintf("&forecast_days=%d", params.ForecastDays)
+	}
 	if len(params.Current) > 0 {
 		currentVars := writeVariableCSV(params.Current)
 		url += fmt.Sprintf("&current=%s", currentVars)

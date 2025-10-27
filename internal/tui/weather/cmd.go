@@ -9,8 +9,11 @@ import (
 func getForecastCmd(lat float64, long float64) tea.Cmd {
 	return func() tea.Msg {
 		params := openmeteo.ForecastParams{
-			Latitude:  lat,
-			Longitude: long,
+			Latitude:      lat,
+			Longitude:     long,
+			Timezone:      "auto",
+			ForecastHours: 6,
+			ForecastDays:  6,
 			Current: []openmeteo.CurrentVariables{
 				openmeteo.CurrentTemperature2m,
 				openmeteo.CurrentApparentTemperature,
@@ -32,7 +35,6 @@ func getForecastCmd(lat float64, long float64) tea.Cmd {
 			Hourly: []openmeteo.HourlyVariables{
 				openmeteo.HourlyTemperature2m,
 				openmeteo.HourlyWeatherCode,
-				openmeteo.HourlyPrecipitation,
 			},
 		}
 		res, err := openmeteo.GetForecast(params)

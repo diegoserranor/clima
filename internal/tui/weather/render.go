@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	blockSpacing    = lipgloss.NewStyle().MarginBottom(1)
-	sectionDivider  = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).BorderBottom(true).BorderBottomForeground(lipgloss.Color("13"))
-	hourColumnStyle = lipgloss.NewStyle().Width(16).Padding(0, 1)
-	dayColumnStyle  = lipgloss.NewStyle().Width(16).Padding(0, 1)
+	title          = lipgloss.NewStyle().Background(lipgloss.Color("13")).Foreground(lipgloss.Color("0")).MarginBottom(1).PaddingLeft(1).PaddingRight(1).Italic(true)
+	sectionDivider = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).BorderBottom(true).BorderBottomForeground(lipgloss.Color("13"))
+	columnWidth    = lipgloss.NewStyle().Width(18)
+	columnBorder   = lipgloss.NewStyle().BorderRight(true).BorderStyle(lipgloss.MarkdownBorder()).BorderBottomForeground(lipgloss.Color("13"))
 )
 
 type forecastColumn struct {
@@ -22,6 +22,10 @@ type forecastColumn struct {
 	description string
 	details     []string
 }
+
+type hourlyColumn struct{}
+
+type dailyColumn struct{}
 
 func renderError() string {
 	return "error"
@@ -118,129 +122,100 @@ func renderCurrent(forecast openmeteo.ForecastResponse) string {
 		uvValue = "-"
 	}
 	s += uvLabel + uvValue
-	return s + "\n"
+	return lipgloss.NewStyle().PaddingBottom(1).Render(s)
 }
 
 func renderHourly(forecast openmeteo.ForecastResponse) string {
-	columns := buildHourlyColumns(forecast)
-	if len(columns) == 0 {
+	hourCount := len(forecast.HourlyTimes)
+	if hourCount == 0 {
 		return theme.Subtle.Render("Hourly forecast unavailable")
-	}
-	return renderColumns(hourColumnStyle, columns) + "\n"
-}
-
-func buildHourlyColumns(forecast openmeteo.ForecastResponse) []forecastColumn {
-	if len(forecast.HourlyTimes) == 0 {
-		return nil
 	}
 
 	weatherCodes, hasWeatherCodes := forecast.HourlySeries(openmeteo.HourlyWeatherCode)
 	temperatures, hasTemperatures := forecast.HourlySeries(openmeteo.HourlyTemperature2m)
-	precipitation, hasPrecipitation := forecast.HourlySeries(openmeteo.HourlyPrecipitation)
 
-	hours := min(5, len(forecast.HourlyTimes))
-	columns := make([]forecastColumn, 0, hours)
+	// Skip the first item since that is the current hour
+	hourColumns := ""
+	for i := 1; i < hourCount; i++ {
+		time := theme.Subtle.Render(formatHourlyTime(forecast.HourlyTimes[i]))
 
-	for i := range hours {
-		label := theme.Subtle.Render(formatHourlyTime(forecast.HourlyTimes[i], forecast.UTCOffsetSeconds, forecast.Timezone))
-
-		description := "-"
-		if hasWeatherCodes && len(weatherCodes.Values) > i {
+		conditions := "-"
+		if hasWeatherCodes {
 			if mapped := openmeteo.MapWeatherCode(weatherCodes.Values[i]); mapped != "" {
-				description = theme.Accent.Render(mapped)
+				conditions = theme.Accent.Render(mapped)
 			}
 		}
 
-		forecastLine := "-"
-		if hasTemperatures && len(temperatures.Values) > i {
-			forecastLine = formatValueWithUnit(temperatures.Values[i], temperatures.Unit)
-		}
-		if hasPrecipitation && len(precipitation.Values) > i && precipitation.Values[i] > 0 {
-			precip := formatValueWithUnit(precipitation.Values[i], precipitation.Unit)
-			if forecastLine == "-" {
-				forecastLine = precip
-			} else {
-				forecastLine = fmt.Sprintf("%s, %s", forecastLine, precip)
-			}
+		temp := "-"
+		if hasTemperatures {
+			temp = formatValueWithUnit(temperatures.Values[i], temperatures.Unit)
 		}
 
-		columns = append(columns, forecastColumn{
-			heading:     label,
-			description: description,
-			details:     []string{forecastLine},
-		})
+		column := lipgloss.JoinVertical(lipgloss.Left, time, conditions, temp)
+		style := columnWidth
+		if i != hourCount-1 {
+			style = style.Inherit(columnBorder).MarginRight(2)
+		}
+		column = style.Render(column)
+		hourColumns = lipgloss.JoinHorizontal(lipgloss.Top, hourColumns, column)
 	}
 
-	return columns
+	hourly := lipgloss.JoinVertical(lipgloss.Left, title.Render("Next few hours"), hourColumns)
+	return lipgloss.NewStyle().PaddingBottom(1).Render(hourly)
 }
 
 func renderDaily(forecast openmeteo.ForecastResponse) string {
-	columns := buildDailyColumns(forecast)
-	if len(columns) == 0 {
+	dayCount := len(forecast.DailyTimes)
+	if dayCount == 0 {
 		return theme.Subtle.Render("Daily outlook unavailable")
-	}
-	return renderColumns(dayColumnStyle, columns)
-}
-
-func buildDailyColumns(forecast openmeteo.ForecastResponse) []forecastColumn {
-	if len(forecast.DailyTimes) == 0 {
-		return nil
 	}
 
 	minTemps, hasMin := forecast.DailySeries(openmeteo.DailyTemperature2mMin)
 	maxTemps, hasMax := forecast.DailySeries(openmeteo.DailyTemperature2mMax)
 	weatherCodes, hasCodes := forecast.DailySeries(openmeteo.DailyWeatherCode)
 
-	days := min(5, len(forecast.DailyTimes))
-	columns := make([]forecastColumn, 0, days)
+	// Skip the first item since that is the current day
+	dailyColumns := ""
+	for i := 1; i < dayCount; i++ {
+		day := theme.Subtle.Render(formatDailyDate(forecast.DailyTimes[i]))
 
-	for i := range days {
-		label := theme.Subtle.Render(formatDailyDate(forecast.DailyTimes[i], forecast.UTCOffsetSeconds, forecast.Timezone))
-
-		description := "-"
+		conditions := "-"
 		if hasCodes && len(weatherCodes.Values) > i {
 			if mapped := openmeteo.MapWeatherCode(weatherCodes.Values[i]); mapped != "" {
-				description = theme.Accent.Render(mapped)
+				conditions = theme.Accent.Render(mapped)
 			}
 		}
 
+		// Min temp
 		minValue := "-"
 		if hasMin && len(minTemps.Values) > i {
 			minValue = formatValueWithUnit(minTemps.Values[i], minTemps.Unit)
 		}
 
+		// Max temp
 		maxValue := "-"
 		if hasMax && len(maxTemps.Values) > i {
 			maxValue = formatValueWithUnit(maxTemps.Values[i], maxTemps.Unit)
 		}
 
-		columns = append(columns, forecastColumn{
-			heading:     label,
-			description: description,
-			details: []string{
-				fmt.Sprintf("Min %s", minValue),
-				fmt.Sprintf("Max %s", maxValue),
-			},
-		})
+		column := lipgloss.JoinVertical(
+			lipgloss.Left,
+			day,
+			conditions,
+			fmt.Sprintf("Min %s", minValue),
+			fmt.Sprintf("Max %s", maxValue),
+		)
+		style := columnWidth
+		if i != dayCount-1 {
+			style = style.Inherit(columnBorder).MarginRight(2)
+		}
+
+		column = style.Render(column)
+		dailyColumns = lipgloss.JoinHorizontal(lipgloss.Top, dailyColumns, column)
 	}
 
-	return columns
-}
-
-func renderColumns(style lipgloss.Style, columns []forecastColumn) string {
-	rendered := make([]string, 0, len(columns))
-	for _, column := range columns {
-		lines := make([]string, 0, 2+len(column.details))
-		if column.heading != "" {
-			lines = append(lines, column.heading)
-		}
-		if column.description != "" {
-			lines = append(lines, column.description)
-		}
-		lines = append(lines, column.details...)
-		rendered = append(rendered, style.Render(lipgloss.JoinVertical(lipgloss.Left, lines...)))
-	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, rendered...)
+	daily := lipgloss.JoinVertical(lipgloss.Left, title.Render("Next few days"), dailyColumns)
+	return lipgloss.NewStyle().Render(daily)
 }
 
 func renderBody(width int, header, current, hourly, daily string) string {
@@ -256,7 +231,7 @@ func renderSection(width int, content string, withDivider bool) string {
 		width = 0
 	}
 
-	style := blockSpacing
+	style := lipgloss.NewStyle()
 	if withDivider {
 		divider := sectionDivider
 		if width > 0 {

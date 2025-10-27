@@ -18,50 +18,28 @@ func formatValueWithUnit(value float64, unit string) string {
 	return fmt.Sprintf("%.1f %s", value, unit)
 }
 
-func formatHourlyTime(raw string, offsetSeconds int, timezone string) string {
+func formatHourlyTime(raw string) string {
 	if raw == "" {
 		return "-"
 	}
-	layouts := []string{time.RFC3339, "2006-01-02T15:04"}
-	var parsed time.Time
-	var err error
-	for _, layout := range layouts {
-		parsed, err = time.Parse(layout, raw)
-		if err == nil {
-			break
-		}
-	}
+	const inputLayout = "2006-01-02T15:04"
+	t, err := time.Parse(inputLayout, raw)
 	if err != nil {
 		return raw
 	}
-	if timezone == "" {
-		timezone = "UTC"
-	}
-	loc := time.FixedZone(timezone, offsetSeconds)
-	return parsed.In(loc).Format("15:04")
+	return t.Format("3 PM")
 }
 
-func formatDailyDate(raw string, offsetSeconds int, timezone string) string {
+func formatDailyDate(raw string) string {
 	if raw == "" {
 		return "-"
 	}
-	layouts := []string{"2006-01-02", time.RFC3339}
-	var parsed time.Time
-	var err error
-	for _, layout := range layouts {
-		parsed, err = time.Parse(layout, raw)
-		if err == nil {
-			break
-		}
-	}
+	const inputLayout = "2006-01-02"
+	t, err := time.Parse(inputLayout, raw)
 	if err != nil {
 		return raw
 	}
-	if timezone == "" {
-		timezone = "UTC"
-	}
-	loc := time.FixedZone(timezone, offsetSeconds)
-	return parsed.In(loc).Format("Mon 02")
+	return t.Format("Mon 2")
 }
 
 func min(a, b int) int {
