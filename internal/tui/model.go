@@ -71,16 +71,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.weather.Init()
 	case search.RecentMsg:
 		m.route = routeRecent
-		m.recent = recent.New()
+		m.recent = m.recent.Reset()
 		return m, m.recent.Init()
 
 	// weather
-	// @todo: reset search, calling Init() does not reset the state
 	case weather.NewSearchMsg:
 		m.route = routeSearch
 		return m, m.search.Init()
 	case weather.RecentMsg:
 		m.route = routeRecent
+		m.recent = m.recent.Reset()
 		return m, m.recent.Init()
 	}
 

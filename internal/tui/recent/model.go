@@ -104,6 +104,11 @@ func (m Model) View() string {
 	))
 }
 
+func (m Model) Reset() Model {
+	m.list.ResetSelected()
+	return m
+}
+
 func New() Model {
 	listDelegate := list.NewDefaultDelegate()
 	listDelegate.ShowDescription = false
