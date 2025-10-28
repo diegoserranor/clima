@@ -62,6 +62,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.weather.Init()
 	case recent.NewSearchMsg:
 		m.route = routeSearch
+		m.search = m.search.Reset()
 		return m, m.search.Init()
 
 	// search
@@ -77,6 +78,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// weather
 	case weather.NewSearchMsg:
 		m.route = routeSearch
+		m.search = m.search.Reset()
 		return m, m.search.Init()
 	case weather.RecentMsg:
 		m.route = routeRecent

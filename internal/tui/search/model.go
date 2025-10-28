@@ -60,6 +60,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 			if key.Matches(msg, m.listKeys.newSearch) {
 				m.input.Reset()
+				m.list.ResetSelected()
 				m.view = viewInput
 				return m, nil
 			}
@@ -129,6 +130,12 @@ func (m Model) View() string {
 		lipgloss.Top,
 		content,
 	))
+}
+
+func (m Model) Reset() Model {
+	m.input.Reset()
+	m.list.ResetSelected()
+	return m
 }
 
 func New() Model {
