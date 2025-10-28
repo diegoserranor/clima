@@ -43,7 +43,6 @@ type Model struct {
 	sink      io.Writer
 	dataState dataState
 	size      theme.Size
-	sizeState sizeState
 	errStr    string
 	ellipsis  spinner.Model
 	location  openmeteo.GeocodingResult
@@ -85,7 +84,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.size.Width = msg.Width
 		m.size.Height = msg.Height
-		m.sizeState = sizeReady
+		m.size.Ready = true
 		return m, nil
 	case dataMsg:
 		m.forecast = msg.forecast
@@ -134,7 +133,7 @@ func (m Model) View() string {
 		content = "unknown error state (weather)"
 	}
 
-	return renderFullscreen(m.sizeState, m.size, content)
+	return renderFullscreen(m.size, content)
 }
 
 func (m Model) Reset(location openmeteo.GeocodingResult) Model {
@@ -154,7 +153,6 @@ func New(location openmeteo.GeocodingResult, sink io.Writer) Model {
 	return Model{
 		sink:      sink,
 		dataState: dataLoading,
-		sizeState: sizeInit,
 		location:  location,
 		ellipsis:  ellipsis,
 		keys:      newKeyMap(),
@@ -162,8 +160,8 @@ func New(location openmeteo.GeocodingResult, sink io.Writer) Model {
 	}
 }
 
-func renderFullscreen(sizeState sizeState, size theme.Size, content string) string {
-	if sizeState == sizeInit {
+func renderFullscreen(size theme.Size, content string) string {
+	if !size.Ready {
 		return "Init..."
 	}
 
