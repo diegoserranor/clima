@@ -46,6 +46,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// terminal size changes
 	case tea.WindowSizeMsg:
+		m.recent, _ = m.recent.Update(msg)
+		m.search, _ = m.search.Update(msg)
 		m.weather, _ = m.weather.Update(msg)
 		return m, nil
 

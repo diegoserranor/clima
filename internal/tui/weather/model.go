@@ -106,11 +106,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	if !m.size.Ready {
+		return theme.OuterFrame.Render("Init...")
+	}
+
+	frameX, frameY := theme.OuterFrame.GetFrameSize()
+	innerWidth := m.size.Width - frameX
+	innerHeight := m.size.Height - frameY
+
 	var content string
-
-	frameX, _ := frame.GetFrameSize()
-	innerWidth := max(m.size.Width-frameX, 0)
-
 	switch m.dataState {
 	case dataError:
 		content = renderError()
@@ -130,10 +134,16 @@ func (m Model) View() string {
 			help,
 		)
 	default:
-		content = "unknown error state (weather)"
+		content = "unknown state (weather)"
 	}
 
-	return renderFullscreen(m.size, content)
+	return theme.OuterFrame.Render(lipgloss.Place(
+		innerWidth,
+		innerHeight,
+		lipgloss.Left,
+		lipgloss.Top,
+		content,
+	))
 }
 
 func (m Model) Reset(location openmeteo.GeocodingResult) Model {
@@ -158,24 +168,4 @@ func New(location openmeteo.GeocodingResult, sink io.Writer) Model {
 		keys:      newKeyMap(),
 		help:      help.New(),
 	}
-}
-
-func renderFullscreen(size theme.Size, content string) string {
-	if !size.Ready {
-		return "Init..."
-	}
-
-	frameX, frameY := outer.GetFrameSize()
-	innerWidth := size.Width - frameX
-	innerHeight := size.Height - frameY
-
-	inner := lipgloss.Place(
-		innerWidth,
-		innerHeight,
-		lipgloss.Left,
-		lipgloss.Top,
-		content,
-	)
-
-	return outer.Render(inner)
 }
