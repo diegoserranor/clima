@@ -16,7 +16,14 @@ func (i searchListItem) FilterValue() string {
 }
 
 func (i searchListItem) Title() string {
-	return fmt.Sprintf("%s, %s", i.Name, i.Country)
+	place := i.Name
+	if i.Admin1 != "" {
+		place = place + ", " + i.Admin1
+	}
+	if i.Country != "" {
+		place = place + ", " + i.Country
+	}
+	return place
 }
 
 func (i searchListItem) Description() string {

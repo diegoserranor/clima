@@ -152,7 +152,7 @@ func New() Model {
 
 	listDelegate := list.NewDefaultDelegate()
 	listDelegate.ShowDescription = false
-	list := list.New([]list.Item{}, listDelegate, 30, 14)
+	list := list.New([]list.Item{}, listDelegate, 50, 14)
 	list.SetShowStatusBar(false)
 	list.SetFilteringEnabled(false)
 	list.SetShowHelp(false)

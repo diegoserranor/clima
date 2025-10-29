@@ -41,7 +41,13 @@ func renderLoading(ellipsis spinner.Model) string {
 }
 
 func renderHeader(location openmeteo.GeocodingResult, forecast openmeteo.ForecastResponse) string {
-	place := location.Name + ", " + location.Country
+	place := location.Name
+	if location.Admin1 != "" {
+		place = place + ", " + location.Admin1
+	}
+	if location.Country != "" {
+		place = place + ", " + location.Country
+	}
 	if weatherCode, ok := forecast.CurrentMeasurement(openmeteo.CurrentWeatherCode); ok {
 		conditions := openmeteo.MapWeatherCode(weatherCode.Value)
 		conditions = theme.Accent.Render(conditions)
