@@ -15,15 +15,6 @@ import (
 	"github.com/esferadigital/clima/internal/tui/theme"
 )
 
-// ---- styles ----
-var outer = lipgloss.NewStyle().Padding(1, 2)
-var frame = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("8")).
-	Padding(1, 2)
-
-// ---- model ----
-
 type dataState int
 
 const (
@@ -123,8 +114,8 @@ func (m Model) View() string {
 	case dataReady:
 		header := renderHeader(m.location, m.forecast)
 		current := renderCurrent(m.forecast)
-		hourly := renderHourly(m.forecast)
-		daily := renderDaily(m.forecast)
+		hourly := renderHourly(innerWidth, m.forecast)
+		daily := renderDaily(innerWidth, m.forecast)
 		body := renderBody(innerWidth, header, current, hourly, daily)
 		help := m.help.View(m.keys)
 		content = lipgloss.JoinVertical(

@@ -11,21 +11,26 @@ import (
 )
 
 var (
-	title          = lipgloss.NewStyle().Background(lipgloss.Color("13")).Foreground(lipgloss.Color("0")).MarginBottom(1).PaddingLeft(1).PaddingRight(1).Italic(true)
-	sectionDivider = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).BorderBottom(true).BorderBottomForeground(lipgloss.Color("13"))
-	columnWidth    = lipgloss.NewStyle().Width(18)
-	columnBorder   = lipgloss.NewStyle().BorderRight(true).BorderStyle(lipgloss.MarkdownBorder()).BorderBottomForeground(lipgloss.Color("13"))
+	titleStyle = lipgloss.NewStyle().
+			Background(lipgloss.Color("13")).
+			Foreground(lipgloss.Color("0")).
+			MarginBottom(1).
+			PaddingLeft(1).
+			PaddingRight(1).
+			Italic(true)
+
+	dividerStyle = lipgloss.NewStyle().
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderBottom(true).
+			BorderBottomForeground(lipgloss.Color("13"))
+
+	columnWidthStyle = lipgloss.NewStyle().Width(18)
+
+	columnBorderStyle = lipgloss.NewStyle().
+				BorderRight(true).
+				BorderStyle(lipgloss.MarkdownBorder()).
+				BorderBottomForeground(lipgloss.Color("13"))
 )
-
-type forecastColumn struct {
-	heading     string
-	description string
-	details     []string
-}
-
-type hourlyColumn struct{}
-
-type dailyColumn struct{}
 
 func renderError() string {
 	return "error"
@@ -125,96 +130,154 @@ func renderCurrent(forecast openmeteo.ForecastResponse) string {
 	return lipgloss.NewStyle().PaddingBottom(1).Render(s)
 }
 
-func renderHourly(forecast openmeteo.ForecastResponse) string {
-	hourCount := len(forecast.HourlyTimes)
-	if hourCount == 0 {
-		return theme.Subtle.Render("Hourly forecast unavailable")
+// Renders the forecast for the next few hours except for the current hour. The number of rendered hours depends on the total width available.
+func renderHourly(width int, forecast openmeteo.ForecastResponse) string {
+	// cw -> the width of the column without right margin
+	// mr -> the right margin for every column except the last
+	// width -> total available width
+	cw := columnWidthStyle.GetWidth()
+	mr := 2
+	maxAllowed := (width + mr) / (cw + mr)
+	if maxAllowed < 1 {
+		return theme.Subtle.Render("The terminal window is too small")
 	}
 
+	// We need at least "now" + 1 future hour to do anything useful.
+	if len(forecast.HourlyTimes) < 2 {
+		return theme.Subtle.Render("Hourly forecast unavailable")
+	}
+	hourlySeries := forecast.HourlyTimes[1:]
+	hourCount := len(hourlySeries)
+
+	// Clamp max allowed to the available hourly data series from the API response
+	maxAvailable := hourCount
+	if maxAllowed > maxAvailable {
+		maxAllowed = maxAvailable
+	}
+
+	var wmoSeries []float64
 	weatherCodes, hasWeatherCodes := forecast.HourlySeries(openmeteo.HourlyWeatherCode)
+	if hasWeatherCodes {
+		wmoSeries = weatherCodes.Values[1:]
+	}
+
+	var tempSeries []float64
 	temperatures, hasTemperatures := forecast.HourlySeries(openmeteo.HourlyTemperature2m)
+	if hasTemperatures {
+		tempSeries = temperatures.Values[1:]
+	}
 
-	// Skip the first item since that is the current hour
-	hourColumns := ""
-	for i := 1; i < hourCount; i++ {
-		time := theme.Subtle.Render(formatHourlyTime(forecast.HourlyTimes[i]))
+	cols := make([]string, 0, maxAllowed)
+	for i := range maxAllowed {
+		timeStr := theme.Subtle.Render(formatHourlyTime(hourlySeries[i]))
 
-		conditions := "-"
+		wmoStr := "-"
 		if hasWeatherCodes {
-			if mapped := openmeteo.MapWeatherCode(weatherCodes.Values[i]); mapped != "" {
-				conditions = theme.Accent.Render(mapped)
+			if mapped := openmeteo.MapWeatherCode(wmoSeries[i]); mapped != "" {
+				wmoStr = theme.Accent.Render(mapped)
 			}
 		}
 
-		temp := "-"
+		tempStr := "-"
 		if hasTemperatures {
-			temp = formatValueWithUnit(temperatures.Values[i], temperatures.Unit)
+			tempStr = formatValueWithUnit(tempSeries[i], temperatures.Unit)
 		}
 
-		column := lipgloss.JoinVertical(lipgloss.Left, time, conditions, temp)
-		style := columnWidth
-		if i != hourCount-1 {
-			style = style.Inherit(columnBorder).MarginRight(2)
+		column := lipgloss.JoinVertical(lipgloss.Left, timeStr, wmoStr, tempStr)
+		style := columnWidthStyle
+		if i != maxAllowed-1 {
+			style = style.Inherit(columnBorderStyle).MarginRight(mr)
 		}
 		column = style.Render(column)
-		hourColumns = lipgloss.JoinHorizontal(lipgloss.Top, hourColumns, column)
+		cols = append(cols, column)
 	}
 
-	hourly := lipgloss.JoinVertical(lipgloss.Left, title.Render("Next few hours"), hourColumns)
+	hourColumns := lipgloss.JoinHorizontal(lipgloss.Top, cols...)
+	hourly := lipgloss.JoinVertical(lipgloss.Left, titleStyle.Render("Next few hours"), hourColumns)
 	return lipgloss.NewStyle().PaddingBottom(1).Render(hourly)
 }
 
-func renderDaily(forecast openmeteo.ForecastResponse) string {
-	dayCount := len(forecast.DailyTimes)
-	if dayCount == 0 {
-		return theme.Subtle.Render("Daily outlook unavailable")
+// Renders the forecast for the next few days except for the current day. The number of days rendered depends on the available width.
+func renderDaily(width int, forecast openmeteo.ForecastResponse) string {
+	// cw -> the width of the column without right margin
+	// mr -> the right margin for every column except the last
+	// width -> total available width
+	cw := columnWidthStyle.GetWidth()
+	mr := 2
+	maxAllowed := (width + mr) / (cw + mr)
+	if maxAllowed < 1 {
+		return theme.Subtle.Render("The terminal window is too small")
 	}
 
-	minTemps, hasMin := forecast.DailySeries(openmeteo.DailyTemperature2mMin)
-	maxTemps, hasMax := forecast.DailySeries(openmeteo.DailyTemperature2mMax)
+	// We need at least "today" + 1 future day to do anything useful.
+	if len(forecast.DailyTimes) < 2 {
+		return theme.Subtle.Render("Daily forecast unavailable")
+	}
+	dailySeries := forecast.DailyTimes[1:]
+	dayCount := len(dailySeries)
+
+	// Clamp max allowed to the available daily data series from the API response
+	maxAvailable := dayCount
+	if maxAllowed > maxAvailable {
+		maxAllowed = maxAvailable
+	}
+
+	var wmoSeries []float64
 	weatherCodes, hasCodes := forecast.DailySeries(openmeteo.DailyWeatherCode)
+	if hasCodes {
+		wmoSeries = weatherCodes.Values[1:]
+	}
 
-	// Skip the first item since that is the current day
-	dailyColumns := ""
-	for i := 1; i < dayCount; i++ {
-		day := theme.Subtle.Render(formatDailyDate(forecast.DailyTimes[i]))
+	var minSeries []float64
+	minTemps, hasMin := forecast.DailySeries(openmeteo.DailyTemperature2mMin)
+	if hasMin {
+		minSeries = minTemps.Values[1:]
+	}
 
-		conditions := "-"
-		if hasCodes && len(weatherCodes.Values) > i {
-			if mapped := openmeteo.MapWeatherCode(weatherCodes.Values[i]); mapped != "" {
-				conditions = theme.Accent.Render(mapped)
+	var maxSeries []float64
+	maxTemps, hasMax := forecast.DailySeries(openmeteo.DailyTemperature2mMax)
+	if hasMax {
+		maxSeries = maxTemps.Values[1:]
+	}
+
+	cols := make([]string, 0, maxAllowed)
+	for i := range maxAllowed {
+		dayStr := theme.Subtle.Render(formatDailyDate(forecast.DailyTimes[i]))
+
+		wmoStr := "-"
+		if hasCodes {
+			if mapped := openmeteo.MapWeatherCode(wmoSeries[i]); mapped != "" {
+				wmoStr = theme.Accent.Render(mapped)
 			}
 		}
 
-		// Min temp
-		minValue := "-"
-		if hasMin && len(minTemps.Values) > i {
-			minValue = formatValueWithUnit(minTemps.Values[i], minTemps.Unit)
+		minStr := "-"
+		if hasMin {
+			minStr = formatValueWithUnit(minSeries[i], minTemps.Unit)
 		}
 
-		// Max temp
-		maxValue := "-"
-		if hasMax && len(maxTemps.Values) > i {
-			maxValue = formatValueWithUnit(maxTemps.Values[i], maxTemps.Unit)
+		maxStr := "-"
+		if hasMax {
+			maxStr = formatValueWithUnit(maxSeries[i], maxTemps.Unit)
 		}
 
 		column := lipgloss.JoinVertical(
 			lipgloss.Left,
-			day,
-			conditions,
-			fmt.Sprintf("Min %s", minValue),
-			fmt.Sprintf("Max %s", maxValue),
+			dayStr,
+			wmoStr,
+			fmt.Sprintf("Min %s", minStr),
+			fmt.Sprintf("Max %s", maxStr),
 		)
-		style := columnWidth
-		if i != dayCount-1 {
-			style = style.Inherit(columnBorder).MarginRight(2)
+		style := columnWidthStyle
+		if i != maxAllowed-1 {
+			style = style.Inherit(columnBorderStyle).MarginRight(mr)
 		}
-
 		column = style.Render(column)
-		dailyColumns = lipgloss.JoinHorizontal(lipgloss.Top, dailyColumns, column)
+		cols = append(cols, column)
 	}
 
-	daily := lipgloss.JoinVertical(lipgloss.Left, title.Render("Next few days"), dailyColumns)
+	dailyColumns := lipgloss.JoinHorizontal(lipgloss.Top, cols...)
+	daily := lipgloss.JoinVertical(lipgloss.Left, titleStyle.Render("Next few days"), dailyColumns)
 	return lipgloss.NewStyle().Render(daily)
 }
 
@@ -233,7 +296,7 @@ func renderSection(width int, content string, withDivider bool) string {
 
 	style := lipgloss.NewStyle()
 	if withDivider {
-		divider := sectionDivider
+		divider := dividerStyle
 		if width > 0 {
 			divider = divider.Width(width)
 		}

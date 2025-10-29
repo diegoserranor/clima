@@ -12,8 +12,8 @@ func getForecastCmd(lat float64, long float64) tea.Cmd {
 			Latitude:      lat,
 			Longitude:     long,
 			Timezone:      "auto",
-			ForecastHours: 6,
-			ForecastDays:  6,
+			ForecastHours: 10,
+			ForecastDays:  10,
 			Current: []openmeteo.CurrentVariables{
 				openmeteo.CurrentTemperature2m,
 				openmeteo.CurrentApparentTemperature,
