@@ -26,12 +26,12 @@ func (k keyMap) FullHelp() [][]key.Binding {
 func newKeyMap() keyMap {
 	return keyMap{
 		up: key.NewBinding(
-			key.WithKeys("up"),
-			key.WithHelp("up", "scroll up"),
+			key.WithKeys("↑"),
+			key.WithHelp("↑", "up"),
 		),
 		down: key.NewBinding(
-			key.WithKeys("down"),
-			key.WithHelp("down", "scroll down"),
+			key.WithKeys("↓"),
+			key.WithHelp("↓", "down"),
 		),
 		newSearch: key.NewBinding(
 			key.WithKeys("n"),
