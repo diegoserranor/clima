@@ -3,6 +3,8 @@ package weather
 import "github.com/charmbracelet/bubbles/key"
 
 type keyMap struct {
+	up              key.Binding
+	down            key.Binding
 	newSearch       key.Binding
 	recentLocations key.Binding
 	refresh         key.Binding
@@ -10,11 +12,12 @@ type keyMap struct {
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.newSearch, k.recentLocations, k.refresh, k.quit}
+	return []key.Binding{k.up, k.down, k.newSearch, k.recentLocations, k.refresh, k.quit}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
+		{k.up}, {k.down},
 		{k.newSearch}, {k.recentLocations},
 		{k.refresh}, {k.quit},
 	}
@@ -22,6 +25,14 @@ func (k keyMap) FullHelp() [][]key.Binding {
 
 func newKeyMap() keyMap {
 	return keyMap{
+		up: key.NewBinding(
+			key.WithKeys("up"),
+			key.WithHelp("up", "scroll up"),
+		),
+		down: key.NewBinding(
+			key.WithKeys("down"),
+			key.WithHelp("down", "scroll down"),
+		),
 		newSearch: key.NewBinding(
 			key.WithKeys("n"),
 			key.WithHelp("n", "new search"),

@@ -32,12 +32,16 @@ var (
 				BorderBottomForeground(lipgloss.Color("13"))
 )
 
+func renderDefault() string {
+	return theme.OuterFrameStyle.Render("Unknown state (weather forecast screen).")
+}
+
 func renderError() string {
-	return "error"
+	return theme.OuterFrameStyle.Render("An error has occurred. Press 'q' to quit.")
 }
 
 func renderLoading(ellipsis spinner.Model) string {
-	return fmt.Sprintf("Loading forecast%s\n", ellipsis.View())
+	return theme.OuterFrameStyle.Render(fmt.Sprintf("Loading forecast%s", ellipsis.View()))
 }
 
 func renderHeader(location openmeteo.GeocodingResult, forecast openmeteo.ForecastResponse) string {
@@ -50,7 +54,7 @@ func renderHeader(location openmeteo.GeocodingResult, forecast openmeteo.Forecas
 	}
 	if weatherCode, ok := forecast.CurrentMeasurement(openmeteo.CurrentWeatherCode); ok {
 		conditions := openmeteo.MapWeatherCode(weatherCode.Value)
-		conditions = theme.Accent.Render(conditions)
+		conditions = theme.AccentStyle.Render(conditions)
 		return lipgloss.JoinVertical(lipgloss.Left, place, conditions)
 	}
 	return place
@@ -69,7 +73,7 @@ func renderCurrent(forecast openmeteo.ForecastResponse) string {
 		s += temperature
 	}
 
-	minTempLabel := theme.Label.Render("\nMin")
+	minTempLabel := theme.LabelStyle.Render("\nMin")
 	var minTempValue string
 	if minSeries, ok := weather.DailySeries(openmeteo.DailyTemperature2mMin); ok && len(minSeries.Values) > 0 {
 		minTempValue = formatValueWithUnit(minSeries.Values[0], minSeries.Unit)
@@ -78,7 +82,7 @@ func renderCurrent(forecast openmeteo.ForecastResponse) string {
 	}
 	s += minTempLabel + minTempValue
 
-	maxTempLabel := theme.Label.Render("\nMax")
+	maxTempLabel := theme.LabelStyle.Render("\nMax")
 	var maxTempValue string
 	if maxSeries, ok := weather.DailySeries(openmeteo.DailyTemperature2mMax); ok && len(maxSeries.Values) > 0 {
 		maxTempValue = formatValueWithUnit(maxSeries.Values[0], maxSeries.Unit)
@@ -87,7 +91,7 @@ func renderCurrent(forecast openmeteo.ForecastResponse) string {
 	}
 	s += maxTempLabel + maxTempValue
 
-	windLabel := theme.Label.Render("\n\nWind")
+	windLabel := theme.LabelStyle.Render("\n\nWind")
 	windValue := "-"
 	if windSpeed, ok := weather.CurrentMeasurement(openmeteo.CurrentWindSpeed10m); ok {
 		windValue = formatMeasurement(windSpeed)
@@ -97,35 +101,35 @@ func renderCurrent(forecast openmeteo.ForecastResponse) string {
 	}
 	s += windLabel + windValue
 
-	windGustsLabel := theme.Label.Render("\nWind gusts")
+	windGustsLabel := theme.LabelStyle.Render("\nWind gusts")
 	windGustsValue := "-"
 	if windGusts, ok := weather.CurrentMeasurement(openmeteo.CurrentWindGusts10m); ok {
 		windGustsValue = formatMeasurement(windGusts)
 	}
 	s += windGustsLabel + windGustsValue
 
-	humidityLabel := theme.Label.Render("\nHumidity")
+	humidityLabel := theme.LabelStyle.Render("\nHumidity")
 	humidityValue := "-"
 	if humidity, ok := weather.CurrentMeasurement(openmeteo.CurrentRelativeHumidity2m); ok {
 		humidityValue = formatMeasurement(humidity)
 	}
 	s += humidityLabel + humidityValue
 
-	precipitationLabel := theme.Label.Render("\nPrecipitation")
+	precipitationLabel := theme.LabelStyle.Render("\nPrecipitation")
 	precipitationValue := "-"
 	if precipitation, ok := weather.CurrentMeasurement(openmeteo.CurrentPrecipitation); ok {
 		precipitationValue = formatMeasurement(precipitation)
 	}
 	s += precipitationLabel + precipitationValue
 
-	pressureLabel := theme.Label.Render("\nPressure")
+	pressureLabel := theme.LabelStyle.Render("\nPressure")
 	pressureValue := "-"
 	if pressure, ok := weather.CurrentMeasurement(openmeteo.CurrentSeaLevelPressure); ok {
 		pressureValue = formatMeasurement(pressure)
 	}
 	s += pressureLabel + pressureValue
 
-	uvLabel := theme.Label.Render("\nUV index")
+	uvLabel := theme.LabelStyle.Render("\nUV index")
 	var uvValue string
 	if uvSeries, ok := weather.DailySeries(openmeteo.DailyUVIndexMax); ok && len(uvSeries.Values) > 0 {
 		uvValue = fmt.Sprintf("%.1f", uvSeries.Values[0])
@@ -145,12 +149,12 @@ func renderHourly(width int, forecast openmeteo.ForecastResponse) string {
 	mr := 2
 	maxAllowed := (width + mr) / (cw + mr)
 	if maxAllowed < 1 {
-		return theme.Subtle.Render("The terminal window is too small")
+		return theme.SubtleStyle.Render("The terminal window is too small")
 	}
 
 	// We need at least "now" + 1 future hour to do anything useful.
 	if len(forecast.HourlyTimes) < 2 {
-		return theme.Subtle.Render("Hourly forecast unavailable")
+		return theme.SubtleStyle.Render("Hourly forecast unavailable")
 	}
 	hourlySeries := forecast.HourlyTimes[1:]
 	hourCount := len(hourlySeries)
@@ -175,12 +179,12 @@ func renderHourly(width int, forecast openmeteo.ForecastResponse) string {
 
 	cols := make([]string, 0, maxAllowed)
 	for i := range maxAllowed {
-		timeStr := theme.Subtle.Render(formatHourlyTime(hourlySeries[i]))
+		timeStr := theme.SubtleStyle.Render(formatHourlyTime(hourlySeries[i]))
 
 		wmoStr := "-"
 		if hasWeatherCodes {
 			if mapped := openmeteo.MapWeatherCode(wmoSeries[i]); mapped != "" {
-				wmoStr = theme.Accent.Render(mapped)
+				wmoStr = theme.AccentStyle.Render(mapped)
 			}
 		}
 
@@ -212,12 +216,12 @@ func renderDaily(width int, forecast openmeteo.ForecastResponse) string {
 	mr := 2
 	maxAllowed := (width + mr) / (cw + mr)
 	if maxAllowed < 1 {
-		return theme.Subtle.Render("The terminal window is too small")
+		return theme.SubtleStyle.Render("The terminal window is too small")
 	}
 
 	// We need at least "today" + 1 future day to do anything useful.
 	if len(forecast.DailyTimes) < 2 {
-		return theme.Subtle.Render("Daily forecast unavailable")
+		return theme.SubtleStyle.Render("Daily forecast unavailable")
 	}
 	dailySeries := forecast.DailyTimes[1:]
 	dayCount := len(dailySeries)
@@ -248,12 +252,12 @@ func renderDaily(width int, forecast openmeteo.ForecastResponse) string {
 
 	cols := make([]string, 0, maxAllowed)
 	for i := range maxAllowed {
-		dayStr := theme.Subtle.Render(formatDailyDate(forecast.DailyTimes[i]))
+		dayStr := theme.SubtleStyle.Render(formatDailyDate(forecast.DailyTimes[i]))
 
 		wmoStr := "-"
 		if hasCodes {
 			if mapped := openmeteo.MapWeatherCode(wmoSeries[i]); mapped != "" {
-				wmoStr = theme.Accent.Render(mapped)
+				wmoStr = theme.AccentStyle.Render(mapped)
 			}
 		}
 

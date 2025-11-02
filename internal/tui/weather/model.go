@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -23,23 +24,25 @@ const (
 	dataError
 )
 
-type sizeState int
+type windowState int
 
 const (
-	sizeInit sizeState = iota
-	sizeReady
+	windowInit windowState = iota
+	windowReady
 )
 
 type Model struct {
-	sink      io.Writer
-	dataState dataState
-	size      theme.Size
-	errStr    string
-	ellipsis  spinner.Model
-	location  openmeteo.GeocodingResult
-	forecast  openmeteo.ForecastResponse
-	keys      keyMap
-	help      help.Model
+	sink        io.Writer
+	windowState windowState
+	dataState   dataState
+	viewport    viewport.Model
+	keys        keyMap
+	errStr      string
+	ellipsis    spinner.Model
+	location    openmeteo.GeocodingResult
+	forecast    openmeteo.ForecastResponse
+	help        string
+	// help        help.Model
 }
 
 func (m Model) Init() tea.Cmd {
@@ -51,6 +54,11 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+
 	if m.sink != nil {
 		now := time.Now()
 		nowStr := now.Format(time.DateTime)
@@ -60,50 +68,62 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if key.Matches(msg, m.keys.newSearch) {
-			return m, requestNewSearchCmd()
+			cmds = append(cmds, requestNewSearchCmd())
 		}
 		if key.Matches(msg, m.keys.recentLocations) {
-			return m, requestRecentCmd()
+			cmds = append(cmds, requestRecentCmd())
 		}
 		if key.Matches(msg, m.keys.refresh) && m.dataState == dataReady {
 			m.dataState = dataLoading
-			return m, tea.Batch(getForecastCmd(m.location.Latitude, m.location.Longitude), m.ellipsis.Tick)
+			batched := tea.Batch(getForecastCmd(m.location.Latitude, m.location.Longitude), m.ellipsis.Tick)
+			cmds = append(cmds, batched)
 		}
 		if key.Matches(msg, m.keys.quit) {
-			return m, tea.Quit
+			cmds = append(cmds, tea.Quit)
 		}
 	case tea.WindowSizeMsg:
-		m.size.Width = msg.Width
-		m.size.Height = msg.Height
-		m.size.Ready = true
-		return m, nil
+		if m.windowState == windowInit {
+			m.windowState = windowReady
+			m.viewport = viewport.New(msg.Width, msg.Height-lipgloss.Height(m.help))
+		} else {
+			m.viewport.Width = msg.Width
+			m.viewport.Height = msg.Height - lipgloss.Height(m.help)
+		}
 	case dataMsg:
 		m.forecast = msg.forecast
 		m.dataState = dataReady
-		return m, nil
+
+		// build the body once, when data is ready
+		frameX, _ := theme.OuterFrameStyle.GetFrameSize()
+		innerWidth := m.viewport.Width - frameX
+
+		header := renderHeader(m.location, m.forecast)
+		current := renderCurrent(m.forecast)
+		hourly := renderHourly(innerWidth, m.forecast)
+		daily := renderDaily(innerWidth, m.forecast)
+		body := renderBody(innerWidth, header, current, hourly, daily)
+
+		m.viewport.SetContent(theme.OuterFrameStyle.Render(body))
 	case errorMsg:
 		m.dataState = dataError
 		m.errStr = msg.err.Error()
-		return m, nil
 	}
 
 	if m.dataState == dataLoading {
-		var cmd tea.Cmd
 		m.ellipsis, cmd = m.ellipsis.Update(msg)
-		return m, cmd
+		cmds = append(cmds, cmd)
 	}
 
-	return m, nil
+	m.viewport, cmd = m.viewport.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
-	if !m.size.Ready {
-		return theme.OuterFrame.Render("Init...")
+	if m.windowState == windowInit {
+		return theme.OuterFrameStyle.Render("Init...")
 	}
-
-	frameX, frameY := theme.OuterFrame.GetFrameSize()
-	innerWidth := m.size.Width - frameX
-	innerHeight := m.size.Height - frameY
 
 	var content string
 	switch m.dataState {
@@ -112,35 +132,18 @@ func (m Model) View() string {
 	case dataLoading:
 		content = renderLoading(m.ellipsis)
 	case dataReady:
-		header := renderHeader(m.location, m.forecast)
-		current := renderCurrent(m.forecast)
-		hourly := renderHourly(innerWidth, m.forecast)
-		daily := renderDaily(innerWidth, m.forecast)
-		body := renderBody(innerWidth, header, current, hourly, daily)
-		help := m.help.View(m.keys)
-		content = lipgloss.JoinVertical(
-			lipgloss.Left,
-			body,
-			"",
-			help,
-		)
+		content = fmt.Sprintf("%s\n%s", m.viewport.View(), m.help)
 	default:
 		content = "unknown state (weather)"
 	}
 
-	return theme.OuterFrame.Render(lipgloss.Place(
-		innerWidth,
-		innerHeight,
-		lipgloss.Left,
-		lipgloss.Top,
-		content,
-	))
+	return content
 }
 
 func (m Model) Reset(location openmeteo.GeocodingResult) Model {
 	ellipsis := spinner.New()
 	ellipsis.Spinner = spinner.Ellipsis
-	ellipsis.Style = theme.Accent
+	ellipsis.Style = theme.AccentStyle
 	m.ellipsis = ellipsis
 	m.dataState = dataLoading
 	m.location = location
@@ -150,13 +153,19 @@ func (m Model) Reset(location openmeteo.GeocodingResult) Model {
 func New(location openmeteo.GeocodingResult, sink io.Writer) Model {
 	ellipsis := spinner.New()
 	ellipsis.Spinner = spinner.Ellipsis
-	ellipsis.Style = theme.Accent
+	ellipsis.Style = theme.AccentStyle
+
+	keys := newKeyMap()
+
+	help := help.New().View(keys)
+	help = theme.OuterFrameStyle.Render(help)
+
 	return Model{
 		sink:      sink,
 		dataState: dataLoading,
 		location:  location,
 		ellipsis:  ellipsis,
 		keys:      newKeyMap(),
-		help:      help.New(),
+		help:      help,
 	}
 }

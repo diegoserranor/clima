@@ -78,10 +78,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m Model) View() string {
 	if !m.size.Ready {
-		return theme.OuterFrame.Render("Init...")
+		return theme.OuterFrameStyle.Render("Init...")
 	}
 
-	frameX, frameY := theme.OuterFrame.GetFrameSize()
+	frameX, frameY := theme.OuterFrameStyle.GetFrameSize()
 	innerWidth := m.size.Width - frameX
 	innerHeight := m.size.Height - frameY
 
@@ -95,7 +95,7 @@ func (m Model) View() string {
 		content = "unknown state (recent)"
 	}
 
-	return theme.OuterFrame.Render(lipgloss.Place(
+	return theme.OuterFrameStyle.Render(lipgloss.Place(
 		innerWidth,
 		innerHeight,
 		lipgloss.Left,

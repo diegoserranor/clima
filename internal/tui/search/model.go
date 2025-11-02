@@ -102,10 +102,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m Model) View() string {
 	if !m.size.Ready {
-		return theme.OuterFrame.Render("Init...")
+		return theme.OuterFrameStyle.Render("Init...")
 	}
 
-	frameX, frameY := theme.OuterFrame.GetFrameSize()
+	frameX, frameY := theme.OuterFrameStyle.GetFrameSize()
 	innerWidth := m.size.Width - frameX
 	innerHeight := m.size.Height - frameY
 
@@ -123,7 +123,7 @@ func (m Model) View() string {
 		content = "unknown state (search)"
 	}
 
-	return theme.OuterFrame.Render(lipgloss.Place(
+	return theme.OuterFrameStyle.Render(lipgloss.Place(
 		innerWidth,
 		innerHeight,
 		lipgloss.Left,
@@ -143,12 +143,12 @@ func New() Model {
 	input.Placeholder = "Salinas"
 	input.Focus()
 	input.CharLimit = 256
-	input.Width = 20
-	input.Cursor.Style = theme.Accent
+	input.Width = 50
+	input.Cursor.Style = theme.AccentStyle
 
 	ellipsis := spinner.New()
 	ellipsis.Spinner = spinner.Ellipsis
-	ellipsis.Style = theme.Accent
+	ellipsis.Style = theme.AccentStyle
 
 	listDelegate := list.NewDefaultDelegate()
 	listDelegate.ShowDescription = false

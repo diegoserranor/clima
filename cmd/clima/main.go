@@ -33,7 +33,12 @@ func main() {
 		defer sink.Close()
 	}
 
-	if _, err = tea.NewProgram(tui.InitialModel(sink), tea.WithAltScreen()).Run(); err != nil {
+	program := tea.NewProgram(
+		tui.InitialModel(sink),
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
+	)
+	if _, err = program.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "TUI program run failed: %v\n", err)
 		os.Exit(1)
 	}
