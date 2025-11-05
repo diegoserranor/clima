@@ -16,6 +16,26 @@ import (
 	"github.com/esferadigital/clima/internal/tui/theme"
 )
 
+func New(location openmeteo.GeocodingResult, sink io.Writer) Model {
+	ellipsis := spinner.New()
+	ellipsis.Spinner = spinner.Ellipsis
+	ellipsis.Style = theme.AccentStyle
+
+	keys := newKeyMap()
+
+	help := help.New().View(keys)
+	help = theme.OuterFrameStyle.Render(help)
+
+	return Model{
+		sink:      sink,
+		dataState: dataLoading,
+		location:  location,
+		ellipsis:  ellipsis,
+		keys:      keys,
+		help:      help,
+	}
+}
+
 type dataState int
 
 const (
@@ -148,24 +168,4 @@ func (m Model) Reset(location openmeteo.GeocodingResult) Model {
 	m.dataState = dataLoading
 	m.location = location
 	return m
-}
-
-func New(location openmeteo.GeocodingResult, sink io.Writer) Model {
-	ellipsis := spinner.New()
-	ellipsis.Spinner = spinner.Ellipsis
-	ellipsis.Style = theme.AccentStyle
-
-	keys := newKeyMap()
-
-	help := help.New().View(keys)
-	help = theme.OuterFrameStyle.Render(help)
-
-	return Model{
-		sink:      sink,
-		dataState: dataLoading,
-		location:  location,
-		ellipsis:  ellipsis,
-		keys:      newKeyMap(),
-		help:      help,
-	}
 }
