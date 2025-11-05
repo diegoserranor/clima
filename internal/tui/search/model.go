@@ -2,6 +2,7 @@ package search
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -15,6 +16,39 @@ import (
 
 const DEFAULT_SEARCH_COUNT = 10
 
+var inputStyle = theme.OuterFrameStyle.PaddingTop(0)
+
+func New() Model {
+	inputKeys := newInputKeyMap()
+
+	inputHeader := theme.OuterFrameStyle.Render("Location search:")
+
+	inputHelp := help.New().View(inputKeys)
+	inputFooter := theme.OuterFrameStyle.Render(inputHelp)
+
+	ellipsis := spinner.New()
+	ellipsis.Spinner = spinner.Ellipsis
+	ellipsis.Style = theme.AccentStyle
+
+	listKeys := newListKeyMap()
+
+	listHeader := theme.OuterFrameStyle.Render("Pick a location:")
+
+	listHelp := help.New().View(listKeys)
+	listFooter := theme.OuterFrameStyle.Render(listHelp)
+
+	return Model{
+		view:        viewInput,
+		inputKeys:   inputKeys,
+		inputHeader: inputHeader,
+		inputFooter: inputFooter,
+		ellipsis:    ellipsis,
+		listKeys:    newListKeyMap(),
+		listHeader:  listHeader,
+		listFooter:  listFooter,
+	}
+}
+
 type view int
 
 const (
@@ -25,14 +59,18 @@ const (
 )
 
 type Model struct {
-	size      theme.Size
-	view      view
-	input     textinput.Model
-	inputKeys inputKeyMap
-	ellipsis  spinner.Model
-	list      list.Model
-	listKeys  listKeyMap
-	help      help.Model
+	windowReady bool
+	view        view
+	input       textinput.Model
+	inputKeys   inputKeyMap
+	inputHeader string
+	inputFiller string
+	inputFooter string
+	ellipsis    spinner.Model
+	list        list.Model
+	listKeys    listKeyMap
+	listHeader  string
+	listFooter  string
 }
 
 func (m Model) Init() tea.Cmd {
@@ -66,9 +104,41 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 		}
 	case tea.WindowSizeMsg:
-		m.size.Width = msg.Width
-		m.size.Height = msg.Height
-		m.size.Ready = true
+		otherWidth, _ := theme.OuterFrameStyle.GetFrameSize()
+		otherHeight := lipgloss.Height(m.inputHeader) + lipgloss.Height(m.inputFooter)
+
+		if !m.windowReady {
+			m.windowReady = true
+
+			input := textinput.New()
+			input.Placeholder = "Salinas"
+			input.Focus()
+			input.CharLimit = 256
+			input.Width = msg.Width - otherWidth
+			input.Cursor.Style = theme.AccentStyle
+			m.input = input
+
+			inputRendered := inputStyle.Render(m.input.View())
+			usedHeight := lipgloss.Height(m.inputHeader) +
+				lipgloss.Height(inputRendered) +
+				lipgloss.Height(m.inputFooter)
+			inputFillerHeight := max(msg.Height-usedHeight, 0)
+			m.inputFiller = strings.Repeat("\n", inputFillerHeight)
+
+			listDelegate := list.NewDefaultDelegate()
+			listDelegate.ShowDescription = false
+			list := list.New([]list.Item{}, listDelegate, msg.Width-otherWidth, msg.Height-otherHeight)
+			list.SetShowStatusBar(false)
+			list.SetFilteringEnabled(false)
+			list.SetShowHelp(false)
+			list.SetShowTitle(false)
+			m.list = list
+		} else {
+			m.input.Width = msg.Width - otherWidth
+
+			m.list.SetWidth(msg.Width - otherWidth)
+			m.list.SetHeight(msg.Height - otherHeight)
+		}
 		return m, nil
 	case dataMsg:
 		if len(msg.locations) == 1 {
@@ -101,70 +171,32 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	if !m.size.Ready {
+	if !m.windowReady {
 		return theme.OuterFrameStyle.Render("Init...")
 	}
-
-	frameX, frameY := theme.OuterFrameStyle.GetFrameSize()
-	innerWidth := m.size.Width - frameX
-	innerHeight := m.size.Height - frameY
 
 	var content string
 	switch m.view {
 	case viewInput:
-		content = lipgloss.JoinVertical(lipgloss.Left, "Location search:", m.input.View(), "", m.help.View(m.inputKeys))
+		input := inputStyle.Render(m.input.View())
+		content = fmt.Sprintf("%s\n%s%s\n%s", m.inputHeader, input, m.inputFiller, m.inputFooter)
 	case viewLoading:
 		content = fmt.Sprintf("Finding location%s", m.ellipsis.View())
+		content = theme.OuterFrameStyle.Render(content)
 	case viewPick:
-		content = lipgloss.JoinVertical(lipgloss.Left, "Pick a location:", "", m.list.View(), "", m.help.View(m.listKeys))
+		list := theme.OuterFrameStyle.Render(m.list.View())
+		content = fmt.Sprintf("%s%s%s", m.listHeader, list, m.listFooter)
 	case viewError:
-		content = "Error ... try again or quit"
+		content = theme.OuterFrameStyle.Render("Error ... try again or quit")
 	default:
-		content = "unknown state (search)"
+		content = theme.OuterFrameStyle.Render("Unknown state (search)")
 	}
 
-	return theme.OuterFrameStyle.Render(lipgloss.Place(
-		innerWidth,
-		innerHeight,
-		lipgloss.Left,
-		lipgloss.Top,
-		content,
-	))
+	return content
 }
 
 func (m Model) Reset() Model {
 	m.input.Reset()
 	m.list.ResetSelected()
 	return m
-}
-
-func New() Model {
-	input := textinput.New()
-	input.Placeholder = "Salinas"
-	input.Focus()
-	input.CharLimit = 256
-	input.Width = 50
-	input.Cursor.Style = theme.AccentStyle
-
-	ellipsis := spinner.New()
-	ellipsis.Spinner = spinner.Ellipsis
-	ellipsis.Style = theme.AccentStyle
-
-	listDelegate := list.NewDefaultDelegate()
-	listDelegate.ShowDescription = false
-	list := list.New([]list.Item{}, listDelegate, 50, 14)
-	list.SetShowStatusBar(false)
-	list.SetFilteringEnabled(false)
-	list.SetShowHelp(false)
-	list.SetShowTitle(false)
-
-	return Model{
-		view:      viewInput,
-		input:     input,
-		inputKeys: newInputKeyMap(),
-		ellipsis:  ellipsis,
-		list:      list,
-		listKeys:  newListKeyMap(),
-		help:      help.New(),
-	}
 }
