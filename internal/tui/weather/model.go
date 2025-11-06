@@ -116,11 +116,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		frameX, _ := theme.OuterFrameStyle.GetFrameSize()
 		innerWidth := m.viewport.Width - frameX
 
-		header := renderHeader(m.location, m.forecast)
+		header := renderHeader(m.location)
 		current := renderCurrent(m.forecast)
+		currentDetails := renderCurrentDetails(m.forecast)
 		hourly := renderHourly(innerWidth, m.forecast)
 		daily := renderDaily(innerWidth, m.forecast)
-		body := renderBody(innerWidth, header, current, hourly, daily)
+		body := renderBody(innerWidth, header, current, currentDetails, hourly, daily)
 
 		m.viewport.SetContent(theme.OuterFrameStyle.Render(body))
 	case errorMsg:

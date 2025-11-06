@@ -7,7 +7,7 @@ var (
 			Foreground(lipgloss.Color("13"))
 
 	LabelStyle = lipgloss.NewStyle().
-			Width(20).
+			Width(12).
 			Foreground(lipgloss.Color("8"))
 
 	SubtleStyle = lipgloss.NewStyle().

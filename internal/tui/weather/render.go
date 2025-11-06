@@ -2,6 +2,7 @@ package weather
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/lipgloss"
@@ -24,7 +25,7 @@ var (
 			BorderBottom(true).
 			BorderBottomForeground(lipgloss.Color("13"))
 
-	columnWidthStyle = lipgloss.NewStyle().Width(18)
+	columnWidthStyle = lipgloss.NewStyle().Width(22)
 
 	columnBorderStyle = lipgloss.NewStyle().
 				BorderRight(true).
@@ -45,100 +46,129 @@ func renderLoading(ellipsis spinner.Model) string {
 	return theme.OuterFrameStyle.Render(fmt.Sprintf("Loading forecast%s", ellipsis.View()))
 }
 
-func renderHeader(location openmeteo.GeocodingResult, forecast openmeteo.ForecastResponse) string {
-	place := location.Name
+func renderHeader(location openmeteo.GeocodingResult) string {
+	header := location.Name
+	parts := []string{}
+
 	if location.Admin1 != "" {
-		place = place + ", " + location.Admin1
+		parts = append(parts, location.Admin1)
 	}
 	if location.Country != "" {
-		place = place + ", " + location.Country
+		parts = append(parts, location.Country)
 	}
-	if weatherCode, ok := forecast.CurrentMeasurement(openmeteo.CurrentWeatherCode); ok {
-		conditions := openmeteo.MapWeatherCode(weatherCode.Value)
-		conditions = theme.AccentStyle.Render(conditions)
-		return lipgloss.JoinVertical(lipgloss.Left, place, conditions)
+	if len(parts) > 0 {
+		header += "\n" + theme.SubtleStyle.Render(strings.Join(parts, ", "))
 	}
-	return place
+	return lipgloss.NewStyle().MarginBottom(1).Render(header)
 }
 
 func renderCurrent(forecast openmeteo.ForecastResponse) string {
-	weather := forecast
-	s := ""
-
-	if currentTemp, ok := weather.CurrentMeasurement(openmeteo.CurrentTemperature2m); ok {
-		temperature := formatMeasurement(currentTemp)
-		if currentApparentTemp, ok := weather.CurrentMeasurement(openmeteo.CurrentApparentTemperature); ok {
-			feelsLike := fmt.Sprintf(" (feels like %s)", formatMeasurement(currentApparentTemp))
-			temperature += feelsLike
-		}
-		s += temperature
+	var current string
+	if weatherCode, ok := forecast.CurrentMeasurement(openmeteo.CurrentWeatherCode); ok {
+		placeholder := `#####
+#   #
+#####`
+		conditions := openmeteo.MapWeatherCode(weatherCode.Value)
+		conditions = theme.AccentStyle.Render(conditions)
+		current = placeholder + "\n" + conditions
 	}
 
-	minTempLabel := theme.LabelStyle.Render("\nMin")
+	if currentTemp, ok := forecast.CurrentMeasurement(openmeteo.CurrentTemperature2m); ok {
+		temperature := formatMeasurement(currentTemp)
+		current += "\n" + temperature
+	}
+
+	if currentApparentTemp, ok := forecast.CurrentMeasurement(openmeteo.CurrentApparentTemperature); ok {
+		feelsLikeVal := formatMeasurement(currentApparentTemp)
+		current += "\n" + theme.SubtleStyle.Render(fmt.Sprintf("(feels like %s)", feelsLikeVal))
+	}
+
+	return current + "\n"
+}
+
+func renderCurrentDetails(forecast openmeteo.ForecastResponse) string {
+	var currentdetails string
+	var col1 string
+	var col2 string
+	var col3 string
+
+	minTempLabel := theme.LabelStyle.Render("Min")
 	var minTempValue string
-	if minSeries, ok := weather.DailySeries(openmeteo.DailyTemperature2mMin); ok && len(minSeries.Values) > 0 {
+	if minSeries, ok := forecast.DailySeries(openmeteo.DailyTemperature2mMin); ok && len(minSeries.Values) > 0 {
 		minTempValue = formatValueWithUnit(minSeries.Values[0], minSeries.Unit)
 	} else {
 		minTempValue = "-"
 	}
-	s += minTempLabel + minTempValue
+	col1 += fmt.Sprintf("%s%s\n", minTempLabel, minTempValue)
 
-	maxTempLabel := theme.LabelStyle.Render("\nMax")
+	maxTempLabel := theme.LabelStyle.Render("Max")
 	var maxTempValue string
-	if maxSeries, ok := weather.DailySeries(openmeteo.DailyTemperature2mMax); ok && len(maxSeries.Values) > 0 {
+	if maxSeries, ok := forecast.DailySeries(openmeteo.DailyTemperature2mMax); ok && len(maxSeries.Values) > 0 {
 		maxTempValue = formatValueWithUnit(maxSeries.Values[0], maxSeries.Unit)
 	} else {
 		maxTempValue = "-"
 	}
-	s += maxTempLabel + maxTempValue
+	col1 += fmt.Sprintf("%s%s\n", maxTempLabel, maxTempValue)
 
-	windLabel := theme.LabelStyle.Render("\n\nWind")
-	windValue := "-"
-	if windSpeed, ok := weather.CurrentMeasurement(openmeteo.CurrentWindSpeed10m); ok {
-		windValue = formatMeasurement(windSpeed)
-		if windDirection, ok := weather.CurrentMeasurement(openmeteo.CurrentWindDirection10m); ok {
-			windValue = fmt.Sprintf("%.1f %s @ %.1f %s", windSpeed.Value, windSpeed.Unit, windDirection.Value, windDirection.Unit)
-		}
-	}
-	s += windLabel + windValue
-
-	windGustsLabel := theme.LabelStyle.Render("\nWind gusts")
-	windGustsValue := "-"
-	if windGusts, ok := weather.CurrentMeasurement(openmeteo.CurrentWindGusts10m); ok {
-		windGustsValue = formatMeasurement(windGusts)
-	}
-	s += windGustsLabel + windGustsValue
-
-	humidityLabel := theme.LabelStyle.Render("\nHumidity")
-	humidityValue := "-"
-	if humidity, ok := weather.CurrentMeasurement(openmeteo.CurrentRelativeHumidity2m); ok {
-		humidityValue = formatMeasurement(humidity)
-	}
-	s += humidityLabel + humidityValue
-
-	precipitationLabel := theme.LabelStyle.Render("\nPrecipitation")
-	precipitationValue := "-"
-	if precipitation, ok := weather.CurrentMeasurement(openmeteo.CurrentPrecipitation); ok {
-		precipitationValue = formatMeasurement(precipitation)
-	}
-	s += precipitationLabel + precipitationValue
-
-	pressureLabel := theme.LabelStyle.Render("\nPressure")
-	pressureValue := "-"
-	if pressure, ok := weather.CurrentMeasurement(openmeteo.CurrentSeaLevelPressure); ok {
-		pressureValue = formatMeasurement(pressure)
-	}
-	s += pressureLabel + pressureValue
-
-	uvLabel := theme.LabelStyle.Render("\nUV index")
+	uvLabel := theme.LabelStyle.Render("UV index")
 	var uvValue string
-	if uvSeries, ok := weather.DailySeries(openmeteo.DailyUVIndexMax); ok && len(uvSeries.Values) > 0 {
+	if uvSeries, ok := forecast.DailySeries(openmeteo.DailyUVIndexMax); ok && len(uvSeries.Values) > 0 {
 		uvValue = fmt.Sprintf("%.1f", uvSeries.Values[0])
 	} else {
 		uvValue = "-"
 	}
-	s += uvLabel + uvValue
-	return lipgloss.NewStyle().PaddingBottom(1).Render(s)
+	col1 += fmt.Sprintf("%s%s", uvLabel, uvValue)
+	col1 = columnWidthStyle.Inherit(columnBorderStyle).MarginRight(2).Render(col1)
+
+	windLabel := theme.LabelStyle.Render("Wind")
+	windValue := "-"
+	if windSpeed, ok := forecast.CurrentMeasurement(openmeteo.CurrentWindSpeed10m); ok {
+		windValue = formatMeasurement(windSpeed)
+	}
+	col2 += fmt.Sprintf("%s%s\n", windLabel, windValue)
+
+	gustsLabel := theme.LabelStyle.Render("Gusts")
+	gustsValue := "-"
+	if windGusts, ok := forecast.CurrentMeasurement(openmeteo.CurrentWindGusts10m); ok {
+		gustsValue = formatMeasurement(windGusts)
+	}
+	currentdetails += gustsLabel + gustsValue
+	col2 += fmt.Sprintf("%s%s\n", gustsLabel, gustsValue)
+
+	directionLabel := theme.LabelStyle.Render("Direction")
+	directionValue := "-"
+	if windDirection, ok := forecast.CurrentMeasurement(openmeteo.CurrentWindDirection10m); ok {
+		directionValue = formatMeasurement(windDirection)
+	}
+	col2 += fmt.Sprintf("%s%s", directionLabel, directionValue)
+	col2 = columnWidthStyle.Inherit(columnBorderStyle).MarginRight(2).Render(col2)
+
+	humidityLabel := theme.LabelStyle.Render("Humidity")
+	humidityValue := "-"
+	if humidity, ok := forecast.CurrentMeasurement(openmeteo.CurrentRelativeHumidity2m); ok {
+		humidityValue = formatMeasurement(humidity)
+	}
+	col3 += fmt.Sprintf("%s%s\n", humidityLabel, humidityValue)
+
+	precipitationLabel := theme.LabelStyle.Render("Precip")
+	precipitationValue := "-"
+	if precipitation, ok := forecast.CurrentMeasurement(openmeteo.CurrentPrecipitation); ok {
+		precipitationValue = formatMeasurement(precipitation)
+	}
+	col3 += fmt.Sprintf("%s%s\n", precipitationLabel, precipitationValue)
+
+	pressureLabel := theme.LabelStyle.Render("Pressure")
+	pressureValue := "-"
+	if pressure, ok := forecast.CurrentMeasurement(openmeteo.CurrentSeaLevelPressure); ok {
+		pressureValue = formatMeasurement(pressure)
+	}
+	currentdetails += pressureLabel + pressureValue
+	col3 += fmt.Sprintf("%s%s", pressureLabel, pressureValue)
+	col3 = columnWidthStyle.Render(col3)
+
+	currentdetails = lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
+
+	return lipgloss.NewStyle().PaddingBottom(1).Render(currentdetails)
 }
 
 // Renders the forecast for the next few hours except for the current hour. The number of rendered hours depends on the total width available.
@@ -272,12 +302,15 @@ func renderDaily(width int, forecast openmeteo.ForecastResponse) string {
 			maxStr = formatValueWithUnit(maxSeries[i], maxTemps.Unit)
 		}
 
+		minLabel := theme.LabelStyle.Render("Min")
+		maxLabel := theme.LabelStyle.Render("Max")
+
 		column := lipgloss.JoinVertical(
 			lipgloss.Left,
 			dayStr,
 			wmoStr,
-			fmt.Sprintf("Min %s", minStr),
-			fmt.Sprintf("Max %s", maxStr),
+			fmt.Sprintf("%s%s", minLabel, minStr),
+			fmt.Sprintf("%s%s", maxLabel, maxStr),
 		)
 		style := columnWidthStyle
 		if i != maxAllowed-1 {
@@ -292,12 +325,13 @@ func renderDaily(width int, forecast openmeteo.ForecastResponse) string {
 	return lipgloss.NewStyle().Render(daily)
 }
 
-func renderBody(width int, header, current, hourly, daily string) string {
+func renderBody(width int, header, current, currentDetails, hourly, daily string) string {
 	header = renderSection(width, header, false)
-	current = renderSection(width, current, true)
+	current = renderSection(width, current, false)
+	currentDetails = renderSection(width, currentDetails, true)
 	hourly = renderSection(width, hourly, true)
 	daily = renderSection(width, daily, false)
-	return lipgloss.JoinVertical(lipgloss.Left, header, current, hourly, daily)
+	return lipgloss.JoinVertical(lipgloss.Left, header, current, currentDetails, hourly, daily)
 }
 
 func renderSection(width int, content string, withDivider bool) string {
