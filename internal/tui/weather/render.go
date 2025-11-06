@@ -36,8 +36,9 @@ func renderDefault() string {
 	return theme.OuterFrameStyle.Render("Unknown state (weather forecast screen).")
 }
 
-func renderError() string {
-	return theme.OuterFrameStyle.Render("An error has occurred. Press 'q' to quit.")
+func renderError(errStr string) string {
+	content := fmt.Sprintf("An error has occurred:\n%s\n\nPress 'q' to quit.", errStr)
+	return theme.OuterFrameStyle.Render(content)
 }
 
 func renderLoading(ellipsis spinner.Model) string {

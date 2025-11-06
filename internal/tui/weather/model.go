@@ -55,14 +55,13 @@ type Model struct {
 	sink        io.Writer
 	windowState windowState
 	dataState   dataState
+	errStr      string
 	viewport    viewport.Model
 	keys        keyMap
-	errStr      string
 	ellipsis    spinner.Model
 	location    openmeteo.GeocodingResult
 	forecast    openmeteo.ForecastResponse
 	help        string
-	// help        help.Model
 }
 
 func (m Model) Init() tea.Cmd {
@@ -148,7 +147,7 @@ func (m Model) View() string {
 	var content string
 	switch m.dataState {
 	case dataError:
-		content = renderError()
+		content = renderError(m.errStr)
 	case dataLoading:
 		content = renderLoading(m.ellipsis)
 	case dataReady:
