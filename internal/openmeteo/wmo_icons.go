@@ -2,11 +2,12 @@ package openmeteo
 
 import (
 	"math"
+	"sort"
 	"strings"
 )
 
 var wmoIcons = map[int]string{
-	0:  icon("   \\|/   ", "  --O--  ", "   /|\\   ", "  --|--  ", "   \\|/   ", "    |    ", "         "),
+	0:  icon("  \\ | /  ", "   \\|/   ", " ---O--- ", "   /|\\   ", "  / | \\  ", "         ", "         "),
 	1:  icon("   \\|/   ", "  --O--  ", "   /|\\   ", "  .--.   ", " (____)  ", "         ", "         "),
 	2:  icon("   \\|/   ", "  --O--  ", "   /|\\   ", "  .--.   ", " (____)  ", "  (____) ", "         "),
 	3:  icon("  .--.   ", " (____)  ", "  .--.   ", " (____)  ", "  .--.   ", " (____)  ", "         "),
@@ -44,6 +45,16 @@ func MapWeatherIcon(code float64) string {
 		return icon
 	}
 	return unknownIcon
+}
+
+// WeatherIconCodes returns the available WMO codes sorted ascending.
+func WeatherIconCodes() []int {
+	codes := make([]int, 0, len(wmoIcons))
+	for code := range wmoIcons {
+		codes = append(codes, code)
+	}
+	sort.Ints(codes)
+	return codes
 }
 
 func icon(lines ...string) string {
