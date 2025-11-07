@@ -13,8 +13,8 @@ import (
 
 var (
 	titleStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("13")).
-			Foreground(lipgloss.Color("0")).
+			Background(theme.AccentColor).
+			Foreground(theme.BlackColor).
 			MarginBottom(1).
 			PaddingLeft(1).
 			PaddingRight(1).
@@ -23,14 +23,14 @@ var (
 	dividerStyle = lipgloss.NewStyle().
 			BorderStyle(lipgloss.NormalBorder()).
 			BorderBottom(true).
-			BorderBottomForeground(lipgloss.Color("13"))
+			BorderBottomForeground(theme.AccentColor)
 
 	columnWidthStyle = lipgloss.NewStyle().Width(22)
 
 	columnBorderStyle = lipgloss.NewStyle().
 				BorderRight(true).
 				BorderStyle(lipgloss.MarkdownBorder()).
-				BorderBottomForeground(lipgloss.Color("13"))
+				BorderBottomForeground(theme.AccentColor)
 )
 
 func renderDefault() string {

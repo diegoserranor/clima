@@ -4,20 +4,20 @@ import "github.com/charmbracelet/lipgloss"
 
 var (
 	AccentStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("13"))
+			Foreground(AccentColor)
 
 	LabelStyle = lipgloss.NewStyle().
 			Width(12).
-			Foreground(lipgloss.Color("8"))
+			Foreground(SubtleColor)
 
 	SubtleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("8"))
+			Foreground(SubtleColor)
 
 	OuterFrameStyle = lipgloss.NewStyle().
 			Padding(1, 2)
 
 	KeyStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("13")).
+			Background(AccentColor).
 			PaddingLeft(1).
 			PaddingRight(1)
 )

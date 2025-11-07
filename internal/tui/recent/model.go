@@ -74,6 +74,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.windowReady = true
 			listDelegate := list.NewDefaultDelegate()
 			listDelegate.ShowDescription = false
+			selectedStyle := list.NewDefaultItemStyles().SelectedTitle
+			listDelegate.Styles.SelectedTitle = selectedStyle.Foreground(theme.AccentColor).BorderForeground(theme.AccentColor)
 			list := list.New([]list.Item{}, listDelegate, msg.Width-otherWidth, msg.Height-otherHeight)
 			list.SetShowStatusBar(false)
 			list.SetFilteringEnabled(false)
