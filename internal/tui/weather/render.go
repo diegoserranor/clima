@@ -65,12 +65,11 @@ func renderHeader(location openmeteo.GeocodingResult) string {
 func renderCurrent(forecast openmeteo.ForecastResponse) string {
 	var current string
 	if weatherCode, ok := forecast.CurrentMeasurement(openmeteo.CurrentWeatherCode); ok {
-		placeholder := `#####
-#   #
-#####`
+		icon := openmeteo.MapWeatherIcon(weatherCode.Value)
+		icon = theme.AccentStyle.Render(icon)
 		conditions := openmeteo.MapWeatherCode(weatherCode.Value)
 		conditions = theme.AccentStyle.Render(conditions)
-		current = placeholder + "\n" + conditions
+		current = icon + "\n" + conditions
 	}
 
 	if currentTemp, ok := forecast.CurrentMeasurement(openmeteo.CurrentTemperature2m); ok {
