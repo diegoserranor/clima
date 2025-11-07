@@ -201,5 +201,6 @@ func (m Model) View() string {
 func (m Model) Reset() Model {
 	m.input.Reset()
 	m.list.ResetSelected()
+	m.view = viewInput
 	return m
 }
