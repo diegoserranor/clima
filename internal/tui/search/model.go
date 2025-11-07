@@ -30,6 +30,16 @@ func New() Model {
 	ellipsis.Spinner = spinner.Ellipsis
 	ellipsis.Style = theme.AccentStyle
 
+	listDelegate := list.NewDefaultDelegate()
+	listDelegate.ShowDescription = false
+	selectedStyle := list.NewDefaultItemStyles().SelectedTitle
+	listDelegate.Styles.SelectedTitle = selectedStyle.Foreground(theme.AccentColor).BorderForeground(theme.AccentColor)
+	list := list.New([]list.Item{}, listDelegate, 0, 0)
+	list.SetShowStatusBar(false)
+	list.SetFilteringEnabled(false)
+	list.SetShowHelp(false)
+	list.SetShowTitle(false)
+
 	listKeys := newListKeyMap()
 
 	listHeader := theme.OuterFrameStyle.Render("Pick a location:")
@@ -43,6 +53,7 @@ func New() Model {
 		inputHeader: inputHeader,
 		inputFooter: inputFooter,
 		ellipsis:    ellipsis,
+		list:        list,
 		listKeys:    newListKeyMap(),
 		listHeader:  listHeader,
 		listFooter:  listFooter,
@@ -124,23 +135,13 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				lipgloss.Height(m.inputFooter)
 			inputFillerHeight := max(msg.Height-usedHeight, 0)
 			m.inputFiller = strings.Repeat("\n", inputFillerHeight)
-
-			listDelegate := list.NewDefaultDelegate()
-			listDelegate.ShowDescription = false
-			selectedStyle := list.NewDefaultItemStyles().SelectedTitle
-			listDelegate.Styles.SelectedTitle = selectedStyle.Foreground(theme.AccentColor).BorderForeground(theme.AccentColor)
-			list := list.New([]list.Item{}, listDelegate, msg.Width-otherWidth, msg.Height-otherHeight)
-			list.SetShowStatusBar(false)
-			list.SetFilteringEnabled(false)
-			list.SetShowHelp(false)
-			list.SetShowTitle(false)
-			m.list = list
 		} else {
 			m.input.Width = msg.Width - otherWidth
-
-			m.list.SetWidth(msg.Width - otherWidth)
-			m.list.SetHeight(msg.Height - otherHeight)
 		}
+
+		m.list.SetWidth(msg.Width - otherWidth)
+		m.list.SetHeight(msg.Height - otherHeight)
+
 		return m, nil
 	case dataMsg:
 		if len(msg.locations) == 1 {

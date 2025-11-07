@@ -19,6 +19,16 @@ func New() Model {
 	ellipsis.Spinner = spinner.Ellipsis
 	ellipsis.Style = theme.AccentStyle
 
+	listDelegate := list.NewDefaultDelegate()
+	listDelegate.ShowDescription = false
+	selectedStyle := list.NewDefaultItemStyles().SelectedTitle
+	listDelegate.Styles.SelectedTitle = selectedStyle.Foreground(theme.AccentColor).BorderForeground(theme.AccentColor)
+	list := list.New([]list.Item{}, listDelegate, 0, 0)
+	list.SetShowStatusBar(false)
+	list.SetFilteringEnabled(false)
+	list.SetShowHelp(false)
+	list.SetShowTitle(false)
+
 	keys := newKeyMap()
 
 	header := theme.OuterFrameStyle.Render("Recent locations:")
@@ -30,6 +40,7 @@ func New() Model {
 		windowReady: false,
 		dataReady:   false,
 		ellipsis:    ellipsis,
+		list:        list,
 		keys:        keys,
 		header:      header,
 		footer:      footer,
@@ -69,23 +80,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		otherWidth, _ := theme.OuterFrameStyle.GetFrameSize()
 		otherHeight := lipgloss.Height(m.header) + lipgloss.Height(m.footer)
-
 		if !m.windowReady {
 			m.windowReady = true
-			listDelegate := list.NewDefaultDelegate()
-			listDelegate.ShowDescription = false
-			selectedStyle := list.NewDefaultItemStyles().SelectedTitle
-			listDelegate.Styles.SelectedTitle = selectedStyle.Foreground(theme.AccentColor).BorderForeground(theme.AccentColor)
-			list := list.New([]list.Item{}, listDelegate, msg.Width-otherWidth, msg.Height-otherHeight)
-			list.SetShowStatusBar(false)
-			list.SetFilteringEnabled(false)
-			list.SetShowHelp(false)
-			list.SetShowTitle(false)
-			m.list = list
-		} else {
-			m.list.SetWidth(msg.Width - otherWidth)
-			m.list.SetHeight(msg.Height - otherHeight)
 		}
+		m.list.SetWidth(msg.Width - otherWidth)
+		m.list.SetHeight(msg.Height - otherHeight)
 		return m, nil
 	case dataMsg:
 		if len(msg.locations) == 0 {
