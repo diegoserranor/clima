@@ -1,4 +1,7 @@
 # clima
+
+![clima gif](./demo.gif)
+
 Weather forecast TUI
 - Written in Go.
 - Built with the Bubble Tea framework.
