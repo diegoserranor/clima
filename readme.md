@@ -9,7 +9,7 @@ Weather forecast TUI
 > The Open-Meteo APIs do not require a key, but are subject to usage limits.
 
 ## Develop
-Run the program from the main file with `go run cmd/main.go`.
+Run the program from the main file with `go run ./cmd/clima`.
 
 >You will not see logs in stdout due to the nature of TUI apps occupying that stream. Pass the `--debug` flag to make the program write the messages received by the `Update` function to a log file at `dev/debug.log`.
 
@@ -18,4 +18,11 @@ Run the program from the main file with `go run cmd/main.go`.
 Make sure `watchexec` is installed and available. Run the watch script.
 ```bash
 ./watch.sh
+```
+
+**Print forecast icons:**
+
+If you are making changes to the weather icons, it can be helpful to see these printed on the terminal.
+```bash
+go run ./cmd/icons
 ```
