@@ -1,6 +1,6 @@
 package weather
 
-import "github.com/esferadigital/clima/internal/openmeteo"
+import "github.com/diegoserranor/clima/internal/openmeteo"
 
 type dataMsg struct {
 	forecast openmeteo.ForecastResponse

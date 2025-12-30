@@ -12,8 +12,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/esferadigital/clima/internal/openmeteo"
-	"github.com/esferadigital/clima/internal/tui/theme"
+	"github.com/diegoserranor/clima/internal/openmeteo"
+	"github.com/diegoserranor/clima/internal/tui/theme"
 )
 
 func New(location openmeteo.GeocodingResult, sink io.Writer) Model {

@@ -2,8 +2,8 @@ package recent
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/esferadigital/clima/internal/openmeteo"
-	"github.com/esferadigital/clima/internal/store"
+	"github.com/diegoserranor/clima/internal/openmeteo"
+	"github.com/diegoserranor/clima/internal/store"
 )
 
 func getRecentLocationsCmd() tea.Cmd {

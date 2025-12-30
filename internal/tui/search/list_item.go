@@ -3,7 +3,7 @@ package search
 import (
 	"fmt"
 
-	"github.com/esferadigital/clima/internal/openmeteo"
+	"github.com/diegoserranor/clima/internal/openmeteo"
 )
 
 // Implements list.Item interface and wraps openmeteo.GeocodingResult

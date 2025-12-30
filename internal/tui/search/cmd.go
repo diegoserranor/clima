@@ -2,7 +2,7 @@ package search
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/esferadigital/clima/internal/openmeteo"
+	"github.com/diegoserranor/clima/internal/openmeteo"
 )
 
 func searchLocationsCmd(name string) tea.Cmd {

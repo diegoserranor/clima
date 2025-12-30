@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/esferadigital/clima/internal/openmeteo"
+	"github.com/diegoserranor/clima/internal/openmeteo"
 )
 
 func formatMeasurement(measurement openmeteo.FloatMeasurement) string {

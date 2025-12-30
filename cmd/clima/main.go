@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/esferadigital/clima/internal/tui"
+	"github.com/diegoserranor/clima/internal/tui"
 )
 
 const DEBUG_PATH = "dev/debug.log"

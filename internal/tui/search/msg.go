@@ -1,6 +1,6 @@
 package search
 
-import "github.com/esferadigital/clima/internal/openmeteo"
+import "github.com/diegoserranor/clima/internal/openmeteo"
 
 type dataMsg struct {
 	locations []openmeteo.GeocodingResult

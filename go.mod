@@ -1,4 +1,4 @@
-module github.com/esferadigital/clima
+module github.com/diegoserranor/clima
 
 go 1.25.0
 

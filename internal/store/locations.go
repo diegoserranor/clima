@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/esferadigital/clima/internal/openmeteo"
+	"github.com/diegoserranor/clima/internal/openmeteo"
 )
 
 const RECENT_LOCATIONS_FILE = "clima_recent.json"
@@ -85,4 +85,3 @@ func AddRecentLocation(location openmeteo.GeocodingResult) error {
 
 	return saveRecent(locations)
 }
-

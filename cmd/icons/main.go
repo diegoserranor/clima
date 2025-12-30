@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/esferadigital/clima/internal/openmeteo"
+	"github.com/diegoserranor/clima/internal/openmeteo"
 )
 
 func main() {

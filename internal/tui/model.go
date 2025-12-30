@@ -7,10 +7,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/esferadigital/clima/internal/openmeteo"
-	"github.com/esferadigital/clima/internal/tui/recent"
-	"github.com/esferadigital/clima/internal/tui/search"
-	"github.com/esferadigital/clima/internal/tui/weather"
+	"github.com/diegoserranor/clima/internal/openmeteo"
+	"github.com/diegoserranor/clima/internal/tui/recent"
+	"github.com/diegoserranor/clima/internal/tui/search"
+	"github.com/diegoserranor/clima/internal/tui/weather"
 )
 
 // ---- model ----

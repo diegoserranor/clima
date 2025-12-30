@@ -11,7 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/esferadigital/clima/internal/tui/theme"
+	"github.com/diegoserranor/clima/internal/tui/theme"
 )
 
 const DEFAULT_SEARCH_COUNT = 10
